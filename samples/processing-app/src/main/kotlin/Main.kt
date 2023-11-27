@@ -1,7 +1,7 @@
 import dev.evo.prometheus.PrometheusMetrics
 import dev.evo.prometheus.LabelSet
 import dev.evo.prometheus.jvm.DefaultJvmMetrics
-import dev.evo.prometheus.ktor.MetricsFeature
+//import dev.evo.prometheus.ktor.MetricsFeature
 import dev.evo.prometheus.ktor.metricsModule
 
 import io.ktor.server.engine.commandLineEnvironment
@@ -9,12 +9,14 @@ import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 
 import kotlin.random.Random
-
 import kotlinx.coroutines.delay
 
-suspend fun main(args: Array<String>) {
+
+suspend fun main(args: Array<String>)
+{
     println("Starting application ...")
 
+    // Seemingly defaults to port 9090 unless specifiied
     val env = commandLineEnvironment(arrayOf("-port=9090") + args)
     val port = env.connectors.single().port
     println("See metrics at: http://localhost:$port/metrics")
@@ -23,17 +25,19 @@ suspend fun main(args: Array<String>) {
         Netty,
         port = port,
         module = {
-            metricsModule(AppMetrics)
+            metricsModule( AppMetrics )
         }
-    )
-        .start(wait = false)
+    ).start(wait = true)
 
+    // Do the intstrumentation
     startProcessing()
 
+    println("Stopping application ...")
     metricsApp.stop(1000, 2000)
 }
 
-suspend fun startProcessing() {
+suspend fun startProcessing()
+{
     while (true) {
         AppMetrics.processedProducts.measureTime({
             source = when (Random.nextInt(3)) {
@@ -46,13 +50,17 @@ suspend fun startProcessing() {
     }
 }
 
-class ProcessingLabels : LabelSet() {
+/// Creating Custom Metrics
+class ProcessingLabels : LabelSet()
+{
     var source by label()
 }
 
-object AppMetrics : PrometheusMetrics() {
-    val processedProducts by histogram("processed_products", logScale(0, 2)) {
+object AppMetrics : PrometheusMetrics()
+{
+    val processedProducts by histogram("processed_products", logScale(0, 2))
+    {
         ProcessingLabels()
     }
-    val jvm by submetrics(DefaultJvmMetrics())
+    // val jvm by submetrics( DefaultJvmMetrics() )
 }

@@ -3,3 +3,6 @@ out/
 .gradle/
 /*.iml
 *.log
+
+# VIM
+*.swp
